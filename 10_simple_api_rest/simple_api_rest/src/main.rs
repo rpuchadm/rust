@@ -5,12 +5,18 @@ use rocket::serde::json::Json;
 
 struct AppState {
     tasks: Mutex<Vec<Task>>,
-    last_id: Mutex<u32>,
+    next_id: Mutex<u32>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 struct Task {
     id: u32,
+    title: String,
+    completed: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct TaskFields {
     title: String,
     completed: bool,
 }
@@ -27,14 +33,23 @@ fn get_task(state: &State<AppState>, id: u32) -> Option<Json<Task>> {
     tasks.iter().find(|t| t.id == id).map(|t| Json(t.clone()))
 }
 
-#[post("/tasks", data = "<task>")]
-fn create_task(state: &State<AppState>, task: Json<Task>) -> Json<Task> {
+#[post("/tasks", data = "<task_fields>")]
+fn create_task(state: &State<AppState>, task_fields: Json<TaskFields>) -> Json<Task> {
     let mut tasks = state.tasks.lock().unwrap();
-    let mut task = task.into_inner();
-    //task.id = tasks.len() as u32 + 1; // Asignar un ID único
-    let mut last_id = state.last_id.lock().unwrap();
-    task.id = *last_id + 1;
-    *last_id = task.id;
+    let task_fields = task_fields.into_inner();
+    // Asignar un ID único
+    let mut next_id = state.next_id.lock().unwrap();
+    let task = Task {
+        id: *next_id,
+        title: task_fields.title.clone(),
+        completed: task_fields.completed,
+    };
+    *next_id += 1;
+    let task = Task {
+        id: task.id,
+        title: task_fields.title,
+        completed: task_fields.completed,
+    };
     tasks.push(task.clone());
     Json(task)
 }
@@ -63,6 +78,7 @@ fn delete_task(state: &State<AppState>, id: u32) -> Option<Json<Task>> {
 
 #[launch]
 fn rocket() -> _ {
+
     let initial_tasks = vec![
         Task {
             id: 1,
@@ -79,7 +95,7 @@ fn rocket() -> _ {
     rocket::build()
         .manage(AppState {
             tasks: Mutex::new(initial_tasks),
-            last_id: Mutex::new(2),
+            next_id: Mutex::new(3),
         })
         .mount("/", routes![get_tasks, get_task, create_task, update_task, delete_task])
 }

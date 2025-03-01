@@ -4,8 +4,9 @@ curl http://localhost:8000/tasks/1
 
 curl -X POST -H "Content-Type: application/json" -d '{"title": "Nueva tarea", "completed": false}' http://localhost:8000/tasks
 
-curl -X POST -H "Content-Type: application/json" -d '{"id": 3, "title": "Nueva tarea", "completed": false}' http://localhost:8000/tasks
-curl -X POST -H "Content-Type: application/json" -d '{"id": 4, "title": "Otra nueva tarea", "completed": true}' http://localhost:8000/tasks
+curl -X POST -H "Content-Type: application/json" -d '{ "title": "Nueva tarea", "completed": false}' http://localhost:8000/tasks
+curl -X POST -H "Content-Type: application/json" -d '{ "title": "Otra nueva tarea", "completed": true}' http://localhost:8000/tasks
+curl -X POST -H "Content-Type: application/json" -d '{ "title": "Otra más", "completed": true}' http://localhost:8000/tasks
 
 curl -X PUT -H "Content-Type: application/json" -d '{"title": "Tarea actualizada", "completed": true}' http://localhost:8000/tasks/1
 curl -X PUT -H "Content-Type: application/json" -d '{"id": 1, "title": "Tarea actualizada", "completed": true}' http://localhost:8000/tasks/1
