@@ -5,6 +5,7 @@ use rocket::serde::json::Json;
 
 struct AppState {
     tasks: Mutex<Vec<Task>>,
+    last_id: Mutex<u32>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -30,7 +31,10 @@ fn get_task(state: &State<AppState>, id: u32) -> Option<Json<Task>> {
 fn create_task(state: &State<AppState>, task: Json<Task>) -> Json<Task> {
     let mut tasks = state.tasks.lock().unwrap();
     let mut task = task.into_inner();
-    task.id = tasks.len() as u32 + 1; // Asignar un ID único
+    //task.id = tasks.len() as u32 + 1; // Asignar un ID único
+    let mut last_id = state.last_id.lock().unwrap();
+    task.id = *last_id + 1;
+    *last_id = task.id;
     tasks.push(task.clone());
     Json(task)
 }
@@ -75,6 +79,7 @@ fn rocket() -> _ {
     rocket::build()
         .manage(AppState {
             tasks: Mutex::new(initial_tasks),
+            last_id: Mutex::new(2),
         })
         .mount("/", routes![get_tasks, get_task, create_task, update_task, delete_task])
 }
