@@ -1,11 +1,12 @@
+use core::net;
 use std::sync::Mutex;
+use redis::Commands;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::serde::json::Json;
 use rocket::{delete, get, launch, post, put, routes, State};
 
 struct AppState {
     tasks: Mutex<Vec<Task>>,
-    next_id: Mutex<u32>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -38,16 +39,12 @@ fn create_task(state: &State<AppState>, task_fields: Json<TaskFields>) -> Json<T
     let mut tasks = state.tasks.lock().unwrap();
     let task_fields = task_fields.into_inner();
     // Asignar un ID único
-    let mut next_id = state.next_id.lock().unwrap();
+    let next_id_ptr = redis_get_integer(NEXT_ID_KEY).unwrap();
+    let next_id = next_id_ptr as u32;
+    redis_set_integer(NEXT_ID_KEY, next_id + 1).unwrap();
     let task = Task {
-        id: *next_id,
+        id: next_id,
         title: task_fields.title.clone(),
-        completed: task_fields.completed,
-    };
-    *next_id += 1;
-    let task = Task {
-        id: task.id,
-        title: task_fields.title,
         completed: task_fields.completed,
     };
     tasks.push(task.clone());
@@ -79,6 +76,8 @@ fn delete_task(state: &State<AppState>, id: u32) -> Option<Json<Task>> {
 #[launch]
 fn rocket() -> _ {
 
+    let next_id = 1;
+
     let initial_tasks = vec![
         Task {
             id: 1,
@@ -92,12 +91,32 @@ fn rocket() -> _ {
         },
     ];
 
+    let next_id = 3;
+    redis_set_integer(NEXT_ID_KEY, next_id).unwrap();
+
     rocket::build()
         .manage(AppState {
             tasks: Mutex::new(initial_tasks),
-            next_id: Mutex::new(3),
         })
         .mount("/", routes![get_tasks, get_task, create_task, update_task, delete_task])
 }
 
 
+const REDIS_SERVER: &str = "redis://127.0.0.1/";
+const NEXT_ID_KEY: &str = "next_id";
+fn redis_get_integer( key_name: &str) -> redis::RedisResult<isize> {
+    // connect to redis
+    let client = redis::Client::open(REDIS_SERVER)?;
+    let mut con = client.get_connection()?;
+    // throw away the result, just make sure it does not fail
+    con.get(key_name)
+}
+
+fn redis_set_integer( key_name: &str, value: u32) -> redis::RedisResult<()> {
+    // connect to redis
+    let client = redis::Client::open(REDIS_SERVER)?;
+    let mut con = client.get_connection()?;
+    // throw away the result, just make sure it does not fail
+    let _: () = con.set(key_name, value)?;
+    Ok(())
+}
