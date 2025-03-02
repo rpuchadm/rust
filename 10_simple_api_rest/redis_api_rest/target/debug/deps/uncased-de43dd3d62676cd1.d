@@ -1,0 +1,11 @@
+/home/rpuchadm/rust/10_simple_api_rest/redis_api_rest/target/debug/deps/libuncased-de43dd3d62676cd1.rmeta: /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/lib.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/serde.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/owned.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/borrowed.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/as_uncased.rs
+
+/home/rpuchadm/rust/10_simple_api_rest/redis_api_rest/target/debug/deps/libuncased-de43dd3d62676cd1.rlib: /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/lib.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/serde.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/owned.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/borrowed.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/as_uncased.rs
+
+/home/rpuchadm/rust/10_simple_api_rest/redis_api_rest/target/debug/deps/uncased-de43dd3d62676cd1.d: /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/lib.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/serde.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/owned.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/borrowed.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/as_uncased.rs
+
+/home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/lib.rs:
+/home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/serde.rs:
+/home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/owned.rs:
+/home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/borrowed.rs:
+/home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uncased-0.9.10/src/as_uncased.rs:

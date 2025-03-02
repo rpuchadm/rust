@@ -1,0 +1,7 @@
+/home/rpuchadm/rust/10_simple_api_rest/redis_api_rest/target/debug/deps/libderanged-09385f04ef94c14d.rmeta: /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/deranged-0.3.11/src/lib.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/deranged-0.3.11/src/traits.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/deranged-0.3.11/src/unsafe_wrapper.rs
+
+/home/rpuchadm/rust/10_simple_api_rest/redis_api_rest/target/debug/deps/deranged-09385f04ef94c14d.d: /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/deranged-0.3.11/src/lib.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/deranged-0.3.11/src/traits.rs /home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/deranged-0.3.11/src/unsafe_wrapper.rs
+
+/home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/deranged-0.3.11/src/lib.rs:
+/home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/deranged-0.3.11/src/traits.rs:
+/home/rpuchadm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/deranged-0.3.11/src/unsafe_wrapper.rs:
