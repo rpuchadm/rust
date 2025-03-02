@@ -1,11 +1,9 @@
-use std::sync::Mutex;
 use redis::Commands;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::serde::json::Json;
-use rocket::{delete, get, launch, post, put, routes, State};
+use rocket::{delete, get, launch, post, put, routes};
 
 struct AppState {
-    tasks: Mutex<Vec<Task>>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -22,78 +20,88 @@ struct TaskFields {
 }
 
 #[get("/tasks")]
-fn get_tasks(state: &State<AppState>) -> Json<Vec<Task>> {
-    let tasks = state.tasks.lock().unwrap();
+fn get_tasks() -> Json<Vec<Task>> {
+    // saca todos los Task de redis
+    let tasks = redis_get_all_tasks().unwrap();
     Json(tasks.clone())
 }
 
 #[get("/tasks/<id>")]
-fn get_task(state: &State<AppState>, id: u32) -> Option<Json<Task>> {
-    let tasks = state.tasks.lock().unwrap();
-    tasks.iter().find(|t| t.id == id).map(|t| Json(t.clone()))
+fn get_task( id: u32) -> Option<Json<Task>> {
+    // saca un Task de redis
+    let task = redis_get_task(id).unwrap();
+    Some(Json(task.clone()))
 }
 
 #[post("/tasks", data = "<task_fields>")]
-fn create_task(state: &State<AppState>, task_fields: Json<TaskFields>) -> Json<Task> {
-    let mut tasks = state.tasks.lock().unwrap();
+fn create_task(task_fields: Json<TaskFields>) -> Json<Task> {
+    // crea un Task en redis
     let task_fields = task_fields.into_inner();
-    // Asignar un ID único
     let next_id_ptr = redis_get_integer(NEXT_ID_KEY).unwrap();
-    let next_id = next_id_ptr as u32;
-    redis_set_integer(NEXT_ID_KEY, next_id + 1).unwrap();
+    let mut next_id = next_id_ptr as u32;
+    let id = next_id;
+    next_id += 1;
+    redis_set_integer(NEXT_ID_KEY, next_id).unwrap();
     let task = Task {
-        id: next_id,
+        id: id,
         title: task_fields.title.clone(),
         completed: task_fields.completed,
     };
-    tasks.push(task.clone());
+    
+    redis_set_task(next_id, task.clone()).unwrap();
+
     Json(task)
 }
 
-#[put("/tasks/<id>", data = "<task>")]
-fn update_task(state: &State<AppState>, id: u32, task: Json<Task>) -> Option<Json<Task>> {
-    let mut tasks = state.tasks.lock().unwrap();
-    if let Some(existing_task) = tasks.iter_mut().find(|t| t.id == id) {
-        existing_task.title = task.title.clone();
-        existing_task.completed = task.completed;
-        Some(Json(existing_task.clone()))
-    } else {
-        None
-    }
+#[put("/tasks/<id>", data = "<task_fields>")]
+fn update_task( id: u32, task_fields: Json<TaskFields>) -> Option<Json<Task>> {
+    // actualiza un Task de redis
+    let task_fields = task_fields.into_inner();
+    let task = Task {
+        id: id,
+        title: task_fields.title.clone(),
+        completed: task_fields.completed,
+    };
+    redis_set_task(id, task.clone()).unwrap();
+    Some(Json(task))
 }
 
 #[delete("/tasks/<id>")]
-fn delete_task(state: &State<AppState>, id: u32) -> Option<Json<Task>> {
-    let mut tasks = state.tasks.lock().unwrap();
-    if let Some(index) = tasks.iter().position(|t| t.id == id) {
-        Some(Json(tasks.remove(index)))
-    } else {
-        None
-    }
+fn delete_task( id: u32) -> Option<Json<Task>> {
+    // borra un Task de redis
+    let task = redis_get_task(id).unwrap();
+    redis_delete_task(id).unwrap();
+    Some(Json(task.clone()))
 }
 
 #[launch]
 fn rocket() -> _ {
 
-    let initial_tasks = vec![
-        Task {
-            id: 1,
-            title: "Aprender Rust".to_string(),
-            completed: false,
-        },
-        Task {
-            id: 2,
-            title: "Crear una API REST".to_string(),
-            completed: false,
-        },
-    ];
+    let next_id = redis_get_integer(NEXT_ID_KEY).unwrap_or(0);
 
-    let next_id = 3;
-    redis_set_integer(NEXT_ID_KEY, next_id).unwrap();
+    let mut id = next_id as u32;
+
+    let task1 = Task {
+        id: id,
+        title: "Aprender Rust".to_string(),
+        completed: false,
+    };
+    redis_set_task(id, task1).unwrap();
+
+    id += 1;
+    let task2 = Task {
+        id: id,
+        title: "Crear una API REST".to_string(),
+        completed: false,
+    };
+    redis_set_task(id, task2).unwrap();
+
+    id += 1;
+    redis_set_integer(NEXT_ID_KEY, id).unwrap();
 
     rocket::build()
         .manage(AppState {
-            tasks: Mutex::new(initial_tasks),
+            
         })
         .mount("/", routes![get_tasks, get_task, create_task, update_task, delete_task])
 }
@@ -108,7 +116,6 @@ fn redis_get_integer( key_name: &str) -> redis::RedisResult<isize> {
     // throw away the result, just make sure it does not fail
     con.get(key_name)
 }
-
 fn redis_set_integer( key_name: &str, value: u32) -> redis::RedisResult<()> {
     // connect to redis
     let client = redis::Client::open(REDIS_SERVER)?;
@@ -116,4 +123,51 @@ fn redis_set_integer( key_name: &str, value: u32) -> redis::RedisResult<()> {
     // throw away the result, just make sure it does not fail
     let _: () = con.set(key_name, value)?;
     Ok(())
+}
+
+const TASK_PREFIX: &str = "task_";
+// funcion para meter un struct TaskFields como json en redis y como key usaremos TASK_PREFIX + id
+fn redis_set_task( id: u32, task: Task) -> redis::RedisResult<()> {
+    // connect to redis
+    let client = redis::Client::open(REDIS_SERVER)?;
+    let mut con = client.get_connection()?;
+    // preparar el json del struct Task
+    let json = serde_json::to_string(&task).unwrap();
+    // throw away the result, just make sure it does not fail
+    let _: () = con.set(TASK_PREFIX.to_string() + &id.to_string(), json)?;
+    Ok(())
+}
+// funcion para obtener un struct TaskFields de redis y como key usaremos TASK_PREFIX + id
+fn redis_get_task( id: u32) -> redis::RedisResult<Task> {
+    // connect to redis
+    let client = redis::Client::open(REDIS_SERVER)?;
+    let mut con = client.get_connection()?;
+    // throw away the result, just make sure it does not fail
+    let json: String = con.get(TASK_PREFIX.to_string() + &id.to_string())?;
+    let task: Task = serde_json::from_str(&json).unwrap();
+    Ok(task)
+}
+// funcion para borrar un struct TaskFields de redis y como key usaremos TASK_PREFIX + id
+fn redis_delete_task( id: u32) -> redis::RedisResult<()> {
+    // connect to redis
+    let client = redis::Client::open(REDIS_SERVER)?;
+    let mut con = client.get_connection()?;
+    // throw away the result, just make sure it does not fail
+    let _: () = con.del(TASK_PREFIX.to_string() + &id.to_string())?;
+    Ok(())
+}
+// funcion para obtener todos los TaskFields de redis y como key usaremos TASK_PREFIX + id
+fn redis_get_all_tasks() -> redis::RedisResult<Vec<Task>> {
+    // connect to redis
+    let client = redis::Client::open(REDIS_SERVER)?;
+    let mut con = client.get_connection()?;
+    // throw away the result, just make sure it does not fail
+    let keys: Vec<String> = con.keys(TASK_PREFIX.to_string() + "*")?;
+    let mut tasks: Vec<Task> = Vec::new();
+    for key in keys {
+        let json: String = con.get(key)?;
+        let task: Task = serde_json::from_str(&json).unwrap();
+        tasks.push(task);
+    }
+    Ok(tasks)
 }
