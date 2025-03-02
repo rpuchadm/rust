@@ -126,7 +126,7 @@ async fn redis_set_integer( key_name: &str, value: u32) -> redis::RedisResult<()
 }
 
 const TASK_PREFIX: &str = "task_";
-// funcion para meter un struct TaskFields como json en redis y como key usaremos TASK_PREFIX + id
+// funcion para meter un struct Task como json en redis y como key usaremos TASK_PREFIX + id
 async fn redis_set_task( id: u32, task: Task) -> redis::RedisResult<()> {
     // connect to redis
     let client = redis::Client::open(REDIS_SERVER)?;
@@ -137,7 +137,7 @@ async fn redis_set_task( id: u32, task: Task) -> redis::RedisResult<()> {
     let _: () = con.set(TASK_PREFIX.to_string() + &id.to_string(), json).await?;
     Ok(())
 }
-// funcion para obtener un struct TaskFields de redis y como key usaremos TASK_PREFIX + id
+// funcion para obtener un struct Task de redis y como key usaremos TASK_PREFIX + id
 async fn redis_get_task( id: u32) -> redis::RedisResult<Task> {
     // connect to redis
     let client = redis::Client::open(REDIS_SERVER)?;
@@ -147,7 +147,7 @@ async fn redis_get_task( id: u32) -> redis::RedisResult<Task> {
     let task: Task = serde_json::from_str(&json).unwrap();
     Ok(task)
 }
-// funcion para borrar un struct TaskFields de redis y como key usaremos TASK_PREFIX + id
+// funcion para borrar un struct Task de redis y como key usaremos TASK_PREFIX + id
 async fn redis_delete_task( id: u32) -> redis::RedisResult<()> {
     // connect to redis
     let client = redis::Client::open(REDIS_SERVER)?;
@@ -156,7 +156,7 @@ async fn redis_delete_task( id: u32) -> redis::RedisResult<()> {
     let _: () = con.del(TASK_PREFIX.to_string() + &id.to_string()).await?;
     Ok(())
 }
-// funcion para obtener todos los TaskFields de redis y como key usaremos TASK_PREFIX + id
+// funcion para obtener todos los Tasks de redis y como key usaremos TASK_PREFIX + id
 async fn redis_get_all_tasks() -> redis::RedisResult<Vec<Task>> {
     // connect to redis
     let client = redis::Client::open(REDIS_SERVER)?;
@@ -171,3 +171,4 @@ async fn redis_get_all_tasks() -> redis::RedisResult<Vec<Task>> {
     }
     Ok(tasks)
 }
+
