@@ -1,4 +1,3 @@
-use core::net;
 use std::sync::Mutex;
 use redis::Commands;
 use rocket::serde::{Deserialize, Serialize};
@@ -75,8 +74,6 @@ fn delete_task(state: &State<AppState>, id: u32) -> Option<Json<Task>> {
 
 #[launch]
 fn rocket() -> _ {
-
-    let next_id = 1;
 
     let initial_tasks = vec![
         Task {
