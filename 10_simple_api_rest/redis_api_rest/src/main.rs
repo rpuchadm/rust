@@ -1,4 +1,5 @@
 use redis::AsyncCommands;
+use redis::ScanOptions;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::serde::json::Json;
 use rocket::{delete, get, launch, post, put, routes};
@@ -22,7 +23,7 @@ struct TaskFields {
 #[get("/tasks")]
 async fn get_tasks() -> Json<Vec<Task>> {
     // saca todos los Task de redis
-    let tasks = redis_get_all_tasks().await.unwrap();
+    let tasks = redis_get_all_tasks_scan().await.unwrap();
     Json(tasks.clone())
 }
 
@@ -156,6 +157,7 @@ async fn redis_delete_task( id: u32) -> redis::RedisResult<()> {
     let _: () = con.del(TASK_PREFIX.to_string() + &id.to_string()).await?;
     Ok(())
 }
+/*
 // funcion para obtener todos los Tasks de redis y como key usaremos TASK_PREFIX + id
 async fn redis_get_all_tasks() -> redis::RedisResult<Vec<Task>> {
     // connect to redis
@@ -165,7 +167,24 @@ async fn redis_get_all_tasks() -> redis::RedisResult<Vec<Task>> {
     let keys: Vec<String> = con.keys(TASK_PREFIX.to_string() + "*").await?;
     let mut tasks: Vec<Task> = Vec::new();
     for key in keys {
-        let json: String = con.get(key).await?;
+        let json: String = con.get( key).await?;
+        let task: Task = serde_json::from_str(&json).unwrap();
+        tasks.push(task);
+    }
+    Ok(tasks)
+}
+*/
+// funcion para obtener los primeros 100 Tasks de redis y como key usaremos TASK_PREFIX + id usando SCAN
+async fn redis_get_all_tasks_scan() -> redis::RedisResult<Vec<Task>> {
+    // connect to redis
+    let client = redis::Client::open(REDIS_SERVER)?;
+    let mut con1 = client.get_multiplexed_async_connection().await.unwrap();
+    let mut con2 = client.get_multiplexed_async_connection().await.unwrap();
+    // throw away the result, just make sure it does not fail
+    let mut tasks: Vec<Task> = Vec::new();
+    let mut iter: redis::AsyncIter<'_, String> = con1.scan_match(TASK_PREFIX.to_string() + "*").await?;
+    while let Some(key) = iter.next_item().await {
+        let json: String = con2.get(key).await?;
         let task: Task = serde_json::from_str(&json).unwrap();
         tasks.push(task);
     }
