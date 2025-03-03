@@ -1,5 +1,4 @@
 use redis::AsyncCommands;
-use redis::ScanOptions;
 use rocket::serde::{Deserialize, Serialize};
 use rocket::serde::json::Json;
 use rocket::{delete, get, launch, post, put, routes};
@@ -107,7 +106,7 @@ async fn rocket() -> _ {
         .mount("/", routes![get_tasks, get_task, create_task, update_task, delete_task])
 }
 
-
+// const REDIS_SERVER: &str = "redis://:mypassword@127.0.0.1:6379";
 const REDIS_SERVER: &str = "redis://127.0.0.1/";
 const NEXT_ID_KEY: &str = "next_id";
 async fn redis_get_integer( key_name: &str) -> redis::RedisResult<isize> {
