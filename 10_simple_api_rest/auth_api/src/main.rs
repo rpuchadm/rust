@@ -11,7 +11,7 @@ struct AppState {
     pool: sqlx::Pool<sqlx::Postgres>,
 }
 
-#[derive(Serialize, Deserialize, Clone, FromRow, Decode)]
+#[derive(Serialize, Deserialize, Clone, FromRow, Decode, Debug)]
 struct Session {
     id: i32,
     token: String,
@@ -44,6 +44,10 @@ async fn profile(state: &State<AppState>, token: BearerToken) -> Option<Json<Ses
     let session = postgres_get_session(&pool, &token.0)
         .await
         .ok()?;
+
+    // Log para inspeccionar la sesión
+    println!("Session: {:?}", session);
+
     Some(Json(session.clone()))
 }
 
