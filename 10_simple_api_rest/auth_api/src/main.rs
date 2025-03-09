@@ -104,10 +104,10 @@ async fn postgres_get_session( pool: &sqlx::Pool<sqlx::Postgres>, token: &str) -
         r#"
         SELECT id, token, user_id, created_at, expires_at, attributes
         FROM sessions
-        WHERE id = $1
+        WHERE token = $1
         "#
     )
-    .bind(session_id)
+    .bind(token)
     .fetch_one(pool)
     .await?;
 
