@@ -6,7 +6,7 @@ use rocket::outcome::Outcome;
 use rocket::request::{self, FromRequest, Request};
 use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
-use rocket::{State, get, launch, post, routes}; // delete, put
+use rocket::{State, delete, get, launch, post, routes}; // put
 use sqlx::{Decode, FromRow};
 
 // declara string con token supersecreto que permite crear sesiones nuevas y desactivar viejas
@@ -118,7 +118,7 @@ async fn profile(state: &State<AppState>, token: BearerToken) -> Result<Json<Ses
                 "Error getting session by code null and token={} : {:?}",
                 token.0, err
             );
-            Status::Forbidden
+            Status::Unauthorized
         })?;
 
     // Log para inspeccionar la sesión
@@ -130,7 +130,7 @@ async fn profile(state: &State<AppState>, token: BearerToken) -> Result<Json<Ses
 }
 
 #[derive(Deserialize)]
-struct SessionRequest {
+struct NewSessionRequest {
     client_id: String,
     user_id: i32,
     expires_in_min: i64,
@@ -140,7 +140,7 @@ struct SessionRequest {
 #[post("/session", data = "<session_request>")]
 async fn new_session(
     state: &State<AppState>,
-    session_request: Json<SessionRequest>,
+    session_request: Json<NewSessionRequest>,
     token: BearerToken,
 ) -> Result<Json<Session>, Status> {
     if token.0 != SUPER_SECRET {
@@ -186,6 +186,47 @@ async fn new_session(
     Ok(Json(session))
 }
 
+#[derive(Deserialize)]
+struct DeleteSessionRequest {
+    token: String,
+}
+
+#[delete("/session", data = "<session_request>")]
+async fn delete_session(
+    state: &State<AppState>,
+    session_request: Json<DeleteSessionRequest>,
+    token: BearerToken,
+) -> Result<Status, Status> {
+    if token.0 != SUPER_SECRET {
+        eprintln!("Error invalid super secret token");
+        return Err(Status::Unauthorized);
+    }
+
+    let pool = state.pool.clone();
+
+    let session = postgres_get_session_by_codenull_token(&pool, &session_request.token)
+        .await
+        .map_err(|err| {
+            eprintln!(
+                "Error getting session by code null and token={} : {:?}",
+                session_request.token, err
+            );
+            Status::Forbidden
+        })?;
+
+    postgres_update_session_token_null_closed_at_by_id(&pool, session.id)
+        .await
+        .or_else(|err| {
+            eprintln!(
+                "Error updating session token to null and closed_at to now by id={} : {:?}",
+                session.id, err
+            );
+            Err(Status::InternalServerError)
+        })?;
+
+    Ok(Status::Ok)
+}
+
 #[launch]
 async fn rocket() -> _ {
     let pool: sqlx::Pool<sqlx::Postgres> = sqlx::postgres::PgPool::connect(POSTGRES_SERVER)
@@ -198,9 +239,10 @@ async fn rocket() -> _ {
 
     ini_postgres(pool.clone()).await;
 
-    rocket::build()
-        .manage(AppState { pool })
-        .mount("/", routes![access_token, new_session, profile])
+    rocket::build().manage(AppState { pool }).mount(
+        "/",
+        routes![access_token, delete_session, new_session, profile],
+    )
 }
 
 async fn ini_postgres(pool: sqlx::Pool<sqlx::Postgres>) {
@@ -241,6 +283,7 @@ async fn ini_postgres(pool: sqlx::Pool<sqlx::Postgres>) {
             user_id INTEGER NOT NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             expires_at TIMESTAMP NOT NULL,
+            closed_at TIMESTAMP,
             attributes JSONB NOT NULL
         )
         "#,
@@ -362,6 +405,24 @@ async fn postgres_insert_session(
     .bind(user_id)
     .bind(expires_at)
     .bind(attributes)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+async fn postgres_update_session_token_null_closed_at_by_id(
+    pool: &sqlx::Pool<sqlx::Postgres>,
+    id: i32,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        UPDATE sessions
+        SET token = NULL, closed_at = now()
+        WHERE id = $1
+        "#,
+    )
+    .bind(id)
     .execute(pool)
     .await?;
 

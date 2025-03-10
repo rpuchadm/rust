@@ -13,8 +13,16 @@ clear && curl -v -X POST http://localhost:8000/session \
 clear && curl -v -X POST http://localhost:8000/accessToken \
      -H "Content-Type: application/x-www-form-urlencoded" \
      -d "client_id=myclientid" \
-     -d "code=qW6GfpAAgwL1k5VLZg5e7mv1QMRAlwGv" | jq
+     -d "code=JqSOIGXf7iFWopHVRiHCagGSBCVmrMlu" | jq
 
 
 clear && curl -v -X GET http://localhost:8000/profile \
-     -H "Authorization: Bearer KJWMUD26yfbnffr01MIt0dTx2Sc2TTBLkeQYySOQDaup69qd0SiwGSXxhT0BK7MYK7TIJ32ZipyFVoEi2wvyr6yi34AJMHCS6gybIh7db1WkZTmwxza4RQQdyTEmw8DB"  | jq
+     -H "Authorization: Bearer DyNEPOrh0DrjubhaF9UCap288sbc8NiMGd2GTnkA8uprdcOPlloxPVVxiHPRWh7Zas7hcL2kPKfCP5jNJqT3waDydfgJmCTifvkMDz8BbluGrhiLcKWGn8fkQT6ZE6B0"  | jq
+
+
+clear && curl -v -X DELETE http://localhost:8000/session \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer mysupersecret" \
+     -d '{
+           "token": "DyNEPOrh0DrjubhaF9UCap288sbc8NiMGd2GTnkA8uprdcOPlloxPVVxiHPRWh7Zas7hcL2kPKfCP5jNJqT3waDydfgJmCTifvkMDz8BbluGrhiLcKWGn8fkQT6ZE6B0"
+         }' | jq
