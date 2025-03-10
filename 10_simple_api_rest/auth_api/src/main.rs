@@ -99,10 +99,10 @@ async fn access_token(state: &State<AppState>, request: Form<AccessTokenRequest>
 #[get("/profile")]
 async fn profile(state: &State<AppState>, token: BearerToken) -> Result<Json<Session>, Status> {
     let pool = state.pool.clone();
-    let session = postgres_get_session_by_token(&pool, &token.0)
+    let session = postgres_get_session_by_codenull_token(&pool, &token.0)
         .await
         .map_err(|err| {
-            eprintln!("Error getting session by token={} : {:?}", token.0, err);
+            eprintln!("Error getting session by code null and token={} : {:?}", token.0, err);
             Status::Forbidden
         })?;
 
@@ -196,12 +196,12 @@ async fn rocket() -> _ {
 // constante con el servidor de postgres
 const POSTGRES_SERVER: &str = "postgresql://myuser:mypassword@localhost:5432/mydatabase";
 
-async fn postgres_get_session_by_token( pool: &sqlx::Pool<sqlx::Postgres>, token: &str) -> Result<Session, sqlx::Error> {
+async fn postgres_get_session_by_codenull_token( pool: &sqlx::Pool<sqlx::Postgres>, token: &str) -> Result<Session, sqlx::Error> {
     let session = sqlx::query_as::<_, Session>(
         r#"
         SELECT id, token, user_id, created_at, expires_at, attributes
         FROM sessions
-        WHERE token = $1
+        WHERE code IS NULL and token = $1
         "#
     )
     .bind(token)
