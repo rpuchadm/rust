@@ -13,8 +13,8 @@ clear && curl -v -X POST http://localhost:8000/session \
 clear && curl -v -X POST http://localhost:8000/accessToken \
      -H "Content-Type: application/x-www-form-urlencoded" \
      -d "client_id=myclientid" \
-     -d "code=JsIkthk7n1g5Nm9vVDxjmVmpZ7g05GjP" | jq
+     -d "code=qW6GfpAAgwL1k5VLZg5e7mv1QMRAlwGv" | jq
 
 
 clear && curl -v -X GET http://localhost:8000/profile \
-     -H "Authorization: Bearer AwGBKvLnDV7lCsN8TbWGj7O8OAtJr3ZCJ2dnNVteSr1tNe7AFIZM6nTm3twONtsua2GVSOlEkrJ11LAvRUkEPnDu1egmLlMMeI6LQVVpDSON2Y4xykxZ9YOS0qKJEMCY"  | jq
+     -H "Authorization: Bearer KJWMUD26yfbnffr01MIt0dTx2Sc2TTBLkeQYySOQDaup69qd0SiwGSXxhT0BK7MYK7TIJ32ZipyFVoEi2wvyr6yi34AJMHCS6gybIh7db1WkZTmwxza4RQQdyTEmw8DB"  | jq

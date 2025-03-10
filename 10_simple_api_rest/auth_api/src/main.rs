@@ -272,28 +272,6 @@ async fn ini_postgres(pool: sqlx::Pool<sqlx::Postgres>) {
     .execute(&pool)
     .await
     .unwrap();
-
-    let expires_at: NaiveDateTime = (Utc::now() + chrono::Duration::days(1)).naive_utc();
-    // intenta ejecutar INSERT INTO sessions (token, user_id, expires_at, attributes) VALUES ($1, $2, $3, $4)
-    sqlx::query(
-        r#"
-        INSERT INTO sessions (
-            code, client_id, user_id,
-            expires_at, attributes
-        ) VALUES (
-            $1, $2, $3,
-            $4, $5
-        )
-        "#,
-    )
-    .bind("mycode")
-    .bind("myclientid")
-    .bind(1)
-    .bind(expires_at)
-    .bind(serde_json::json!({"key": "value"}))
-    .execute(&pool)
-    .await
-    .unwrap();
 }
 // constante con el servidor de postgres
 const POSTGRES_SERVER: &str = "postgresql://myuser:mypassword@localhost:5432/mydatabase";
