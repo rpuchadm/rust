@@ -5,4 +5,4 @@ clear && curl -v -X POST http://localhost:8000/accessToken \
 
 
 clear && curl -v -X GET http://localhost:8000/profile \
-     -H "Authorization: Bearer mytoken"  | jq
+     -H "Authorization: Bearer pseuxgt1gRYBYiDEi05QFjmGTLkOjznZIc91NgPD9YYgPThMnLzDM3LXnQLupvduTvs6Kfs7I9jzxKnvBcYsidmz6UdYaUH1qWFv2LDNaRkvURmfgA3nmp1Bhn4oPwKn"  | jq
