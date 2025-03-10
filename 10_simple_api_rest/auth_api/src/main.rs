@@ -303,6 +303,7 @@ async fn postgres_get_session_by_codenull_token(
             id, client_id, code, token, user_id, created_at, expires_at, attributes
         FROM sessions
         WHERE code IS NULL and token = $1
+        and expires_at > now()
         "#,
     )
     .bind(token)
@@ -323,6 +324,7 @@ async fn postgres_get_session_by_code_client_id(
             id, client_id, code, token, user_id, created_at, expires_at, attributes
         FROM sessions
         WHERE code = $1 and client_id = $2
+        and expires_at > now()
         "#,
     )
     .bind(code)
