@@ -129,16 +129,18 @@ async fn profile(state: &State<AppState>, token: BearerToken) -> Result<Json<Ses
     Ok(Json(session.clone()))
 }
 
-// post de nueva sesión donde se tiene que pasar el token supersecreto por el header
-// se usa para crear sesiones nuevas
-// en el post debe venir client_id, user_id, expires_at, attributes
-// debe generar un token aleatorio y un code aleatorio
-// inserta en la base de datos la sesión
-// devuelve la sesión creada
-#[post("/session", data = "<session>")]
+#[derive(Deserialize)]
+struct SessionRequest {
+    client_id: String,
+    user_id: i32,
+    expires_in_min: i64,
+    attributes: serde_json::Value,
+}
+
+#[post("/session", data = "<session_request>")]
 async fn new_session(
     state: &State<AppState>,
-    session: Json<Session>,
+    session_request: Json<SessionRequest>,
     token: BearerToken,
 ) -> Result<Json<Session>, Status> {
     if token.0 != SUPER_SECRET {
@@ -150,13 +152,16 @@ async fn new_session(
 
     let pool = state.pool.clone();
 
+    let expires_at: NaiveDateTime =
+        (Utc::now() + chrono::Duration::minutes(session_request.expires_in_min)).naive_utc();
+
     postgres_insert_session(
         &pool,
         &code,
-        &session.client_id,
-        session.user_id,
-        session.expires_at,
-        session.attributes.clone(),
+        &session_request.client_id,
+        session_request.user_id,
+        expires_at,
+        session_request.attributes.clone(),
     )
     .await
     .or_else(|err| {
@@ -169,13 +174,13 @@ async fn new_session(
 
     let session = Session {
         id: 0,
-        client_id: session.client_id.clone(),
+        client_id: session_request.client_id.clone(),
         code: code_some,
         token: token_none,
-        user_id: session.user_id,
+        user_id: session_request.user_id,
         created_at: chrono::Utc::now().naive_utc(),
-        expires_at: session.expires_at,
-        attributes: session.attributes.clone(),
+        expires_at,
+        attributes: session_request.attributes.clone(),
     };
 
     Ok(Json(session))
