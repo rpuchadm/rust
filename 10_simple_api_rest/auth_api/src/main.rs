@@ -66,7 +66,6 @@ async fn access_token(state: &State<AppState>, request: Form<AccessTokenRequest>
     let pool = state.pool.clone();
 
     // Obtiene la sesión por el código de autorización y el id del cliente
-    // si no encuentra la sesión devuelve un error 500
     let session = postgres_get_session_by_code_client_id(&pool, code, client_id)
         .await
         .map_err(|err| {
