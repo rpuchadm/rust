@@ -1,3 +1,5 @@
+docker rm -f mypostgres
+
 docker run -d \
     --name mypostgres \
     -e POSTGRES_USER=myuser \
@@ -10,7 +12,7 @@ docker ps
 
 docker exec -it mypostgres psql -U myuser -d mydatabase
 
-docker rm -f mypostgres
+
 
 ------
 
