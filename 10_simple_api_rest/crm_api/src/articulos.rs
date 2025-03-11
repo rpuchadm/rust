@@ -1,25 +1,19 @@
-#[derive(Serialize, Clone)]
-struct Articulo {
-    id: i32,
-    nombre: String,
-    descripcion: Option<String>,
-    precio: f64,
-    stock: i32,
-    fecha_creacion: chrono::NaiveDateTime,
+use serde::Serialize;
+use sqlx::{Decode, FromRow};
+
+#[derive(Serialize, Clone, FromRow)]
+pub struct Articulo {
+    pub id: i32,
+    pub nombre: String,
+    pub descripcion: Option<String>,
+    pub precio: f64,
+    pub stock: i32,
+    pub fecha_creacion: chrono::NaiveDateTime,
 }
 
-#[get("/articulos")]
-async fn articulos(state: &rocket::State<AppState>) -> Result<Vec<Json<Cliente>>, Status> {
-    let pool = state.pool.clone();
-    let articulos = postgres_get_articulos(&pool).await.map_err(|e| {
-        eprintln!("Error getting articles: {:?}", e);
-        Status::InternalServerError
-    })?;
-
-    Ok(articulos.into_iter().map(Json).collect())
-}
-
-async fn postgres_get_articulos(pool: &sqlx::Pool<sqlx::Postgres>) -> Vec<Articulo> {
+pub async fn postgres_get_articulos(
+    pool: &sqlx::Pool<sqlx::Postgres>,
+) -> Result<Vec<Articulo>, sqlx::Error> {
     let articulos = sqlx::query_as::<_, Articulo>(
         "
         SELECT
@@ -28,4 +22,6 @@ async fn postgres_get_articulos(pool: &sqlx::Pool<sqlx::Postgres>) -> Vec<Articu
     )
     .fetch_all(pool)
     .await?;
+
+    Ok(articulos)
 }

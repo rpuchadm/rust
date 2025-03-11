@@ -10,6 +10,12 @@ use rocket::serde::{Deserialize, Serialize};
 use rocket::{State, delete, get, launch, post, routes}; // put
 use sqlx::{Decode, FromRow};
 
+mod articulos;
+mod clientes;
+
+use articulos::{Articulo, postgres_get_articulos};
+use clientes::{Cliente, postgres_get_cliente_by_id};
+
 struct AppState {
     pool: sqlx::Pool<sqlx::Postgres>,
 }
@@ -28,54 +34,18 @@ async fn rocket() -> _ {
 
     rocket::build()
         .manage(AppState { pool })
-        .mount("/", routes![articulos, profile])
-}
-
-#[derive(Serialize, Clone, FromRow)]
-struct Articulo {
-    id: i32,
-    nombre: String,
-    descripcion: Option<String>,
-    precio: i32,
-    stock: i32,
-    fecha_creacion: chrono::NaiveDateTime,
+        .mount("/", routes![getarticulos, profile])
 }
 
 #[get("/articulos")]
-async fn articulos(state: &rocket::State<AppState>) -> Result<Json<Vec<Articulo>>, Status> {
+async fn getarticulos(state: &rocket::State<AppState>) -> Result<Json<Vec<Articulo>>, Status> {
     let pool = state.pool.clone();
-    let articulos = postgres_get_articulos(&pool).await.map_err(|e| {
+    let varticulos = postgres_get_articulos(&pool).await.map_err(|e| {
         eprintln!("Error getting articles: {:?}", e);
         Status::InternalServerError
     })?;
 
-    Ok(Json(articulos))
-}
-
-async fn postgres_get_articulos(
-    pool: &sqlx::Pool<sqlx::Postgres>,
-) -> Result<Vec<Articulo>, sqlx::Error> {
-    let articulos = sqlx::query_as::<_, Articulo>(
-        "
-        SELECT
-            id, nombre, descripcion, precio, stock, fecha_creacion
-        FROM articulos",
-    )
-    .fetch_all(pool)
-    .await?;
-
-    Ok(articulos)
-}
-
-#[derive(Serialize, Clone, FromRow)]
-struct Cliente {
-    id: i32,
-    user_id: i32,
-    nombre: String,
-    email: String,
-    telefono: Option<String>,
-    direccion: Option<String>,
-    fecha_registro: chrono::NaiveDateTime,
+    Ok(Json(varticulos))
 }
 
 #[get("/profile/<user_id>")]
@@ -90,23 +60,6 @@ async fn profile(state: &State<AppState>, user_id: i32) -> Result<Json<Cliente>,
         })?;
 
     Ok(Json(cliente))
-}
-
-async fn postgres_get_cliente_by_id(
-    pool: &sqlx::Pool<sqlx::Postgres>,
-    user_id: i32,
-) -> Result<Cliente, sqlx::Error> {
-    let cliente: Cliente = sqlx::query_as::<_, Cliente>(
-        "SELECT
-            id, user_id, nombre, email, telefono, direccion, fecha_registro
-        FROM clientes
-        WHERE user_id = $1",
-    )
-    .bind(user_id)
-    .fetch_one(pool)
-    .await?;
-
-    Ok(cliente)
 }
 
 // constante con el servidor de postgres
