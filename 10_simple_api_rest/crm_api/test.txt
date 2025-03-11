@@ -1,0 +1,4 @@
+clear && curl -v -X GET http://localhost:8000/articulos | jq
+
+clear && curl -v -X GET http://localhost:8000/profile/21 | jq
+
