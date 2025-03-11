@@ -1,4 +1,5 @@
 use chrono::prelude::*;
+use redis::AsyncCommands;
 use rocket::FromForm;
 use rocket::form::Form;
 use rocket::http::Status;
@@ -110,6 +111,16 @@ async fn access_token(
 // a get profile se accede de manera reiterada con el token para obtener la sesión
 #[get("/profile")]
 async fn profile(state: &State<AppState>, token: BearerToken) -> Result<Json<Session>, Status> {
+    let session = redis_get_session_by_token(&token.0).await.map_err(|err| {
+        eprintln!("Error getting session by token={} : {:?}", token.0, err);
+        Status::InternalServerError
+    })?;
+
+    if let Some(session) = session {
+        // println!("Session from redis: {:?}", session);
+        return Ok(Json(session));
+    }
+
     let pool = state.pool.clone();
     let mut session = postgres_get_session_by_codenull_token(&pool, &token.0)
         .await
@@ -121,10 +132,20 @@ async fn profile(state: &State<AppState>, token: BearerToken) -> Result<Json<Ses
             Status::Unauthorized
         })?;
 
-    // Log para inspeccionar la sesión
-    //println!("Session: {:?}", session);
+    // println!("Session from postgres: {:?}", session);
 
     session.token = None;
+
+    redis_set_session_by_token(&token.0, &session)
+        .await
+        .map_err(|err| {
+            eprintln!(
+                "Error setting session
+        by token={} : {:?}",
+                token.0, err
+            );
+            Status::InternalServerError
+        })?;
 
     Ok(Json(session.clone()))
 }
@@ -439,4 +460,28 @@ fn random_token(n: usize) -> String {
         .take(n) // Toma `n` caracteres
         .map(char::from) // Convierte cada u8 a char
         .collect() // Recolecta en un String
+}
+
+const REDIS_SERVER: &str = "redis://:WEVDH12f34r56w78m9@127.0.0.1/";
+const SESSION_TOKEN_KEY: &str = "session-token:";
+const SESSION_TIME_SECONDS: i64 = 60 * 2; // 2 minutos
+async fn redis_get_session_by_token(token: &str) -> redis::RedisResult<Option<Session>> {
+    let key = format!("{}:{}", SESSION_TOKEN_KEY, token);
+    let client = redis::Client::open(REDIS_SERVER)?;
+    let mut con = client.get_multiplexed_async_connection().await.unwrap();
+    let session_json: Option<String> = con.get(&key).await?;
+    let session: Option<Session> = match session_json {
+        Some(session_json) => Some(serde_json::from_str(&session_json).unwrap()),
+        None => None,
+    };
+    Ok(session)
+}
+async fn redis_set_session_by_token(token: &str, session: &Session) -> redis::RedisResult<()> {
+    let key = format!("{}:{}", SESSION_TOKEN_KEY, token);
+    let client = redis::Client::open(REDIS_SERVER)?;
+    let mut con = client.get_multiplexed_async_connection().await.unwrap();
+    let session_json = serde_json::to_string(session).unwrap();
+    let _: () = con.set(&key, session_json).await?;
+    let _: () = con.expire(&key, SESSION_TIME_SECONDS).await?;
+    Ok(())
 }
