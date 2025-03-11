@@ -10,6 +10,7 @@ use rocket::{State, delete, get, launch, post, routes}; // put
 use sqlx::{Decode, FromRow};
 
 mod postgresini;
+mod randomtoken;
 mod sesion;
 
 use sesion::{
@@ -83,7 +84,7 @@ async fn access_token(
     // Log para inspeccionar la sesión
     println!("access_token Session: {:?}", session);
 
-    let token = random_token(128);
+    let token = randomtoken::random_token(128);
 
     // Actualiza el código de autorización a nulo
     postgres_update_session_set_token_codenull_by_id(&pool, session.id, &token)
@@ -164,7 +165,7 @@ async fn new_session(
         return Err(Status::Unauthorized);
     }
 
-    let code = random_token(32);
+    let code = randomtoken::random_token(32);
 
     let pool = state.pool.clone();
 
@@ -263,15 +264,3 @@ async fn rocket() -> _ {
 
 // constante con el servidor de postgres
 const POSTGRES_SERVER: &str = "postgresql://myuser:mypassword@localhost:5432/mydatabase";
-
-// funcion para generar un token aleatorio de n caracteres
-fn random_token(n: usize) -> String {
-    use rand::distributions::Alphanumeric;
-    use rand::{Rng, thread_rng};
-
-    thread_rng()
-        .sample_iter(&Alphanumeric) // Genera una secuencia de caracteres alfanuméricos
-        .take(n) // Toma `n` caracteres
-        .map(char::from) // Convierte cada u8 a char
-        .collect() // Recolecta en un String
-}
