@@ -1,7 +1,34 @@
-async fn postgresini(pool: sqlx::Pool<sqlx::Postgres>) {
+pub async fn initialization(pool: sqlx::Pool<sqlx::Postgres>) {
+    sqlx::query(
+        r#"        
+        DROP TABLE IF EXISTS pedidos_detalles;
+        "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"        
+        DROP TABLE IF EXISTS pedidos;
+        "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
     sqlx::query(
         r#"        
         DROP TABLE IF EXISTS clientes;
+        "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"        
+        DROP TABLE IF EXISTS articulos;
         "#,
     )
     .execute(&pool)
@@ -27,15 +54,6 @@ async fn postgresini(pool: sqlx::Pool<sqlx::Postgres>) {
 
     sqlx::query(
         r#"        
-        DROP TABLE IF EXISTS articulos;
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    sqlx::query(
-        r#"        
         CREATE TABLE IF NOT EXISTS articulos (
             id SERIAL PRIMARY KEY,              -- Identificador único del artículo
             nombre VARCHAR(100) NOT NULL,       -- Nombre del artículo
@@ -52,15 +70,6 @@ async fn postgresini(pool: sqlx::Pool<sqlx::Postgres>) {
 
     sqlx::query(
         r#"        
-        DROP TABLE IF EXISTS pedidos;
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    sqlx::query(
-        r#"        
         CREATE TABLE IF NOT EXISTS pedidos (
             id SERIAL PRIMARY KEY,              -- Identificador único del pedido
             cliente_id INT NOT NULL,             -- ID del cliente que realiza el pedido
@@ -69,15 +78,6 @@ async fn postgresini(pool: sqlx::Pool<sqlx::Postgres>) {
             total DECIMAL(10, 2) NOT NULL,      -- Total del pedido
             FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
         );
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    sqlx::query(
-        r#"        
-        DROP TABLE IF EXISTS pedidos_detalles;
         "#,
     )
     .execute(&pool)
