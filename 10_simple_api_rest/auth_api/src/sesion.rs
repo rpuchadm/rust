@@ -1,3 +1,4 @@
+use redis::AsyncCommands;
 use rocket::serde::{Deserialize, Serialize};
 use sqlx::{Decode, FromRow};
 
@@ -122,5 +123,29 @@ pub async fn postgres_update_session_token_null_closed_at_by_id(
     .execute(pool)
     .await?;
 
+    Ok(())
+}
+
+const REDIS_SERVER: &str = "redis://:WEVDH12f34r56w78m9@127.0.0.1/";
+const SESSION_TOKEN_KEY: &str = "session-token:";
+const SESSION_TIME_SECONDS: i64 = 60 * 2; // 2 minutos
+pub async fn redis_get_session_by_token(token: &str) -> redis::RedisResult<Option<Session>> {
+    let key = format!("{}:{}", SESSION_TOKEN_KEY, token);
+    let client = redis::Client::open(REDIS_SERVER)?;
+    let mut con = client.get_multiplexed_async_connection().await.unwrap();
+    let session_json: Option<String> = con.get(&key).await?;
+    let session: Option<Session> = match session_json {
+        Some(session_json) => Some(serde_json::from_str(&session_json).unwrap()),
+        None => None,
+    };
+    Ok(session)
+}
+pub async fn redis_set_session_by_token(token: &str, session: &Session) -> redis::RedisResult<()> {
+    let key = format!("{}:{}", SESSION_TOKEN_KEY, token);
+    let client = redis::Client::open(REDIS_SERVER)?;
+    let mut con = client.get_multiplexed_async_connection().await.unwrap();
+    let session_json = serde_json::to_string(session).unwrap();
+    let _: () = con.set(&key, session_json).await?;
+    let _: () = con.expire(&key, SESSION_TIME_SECONDS).await?;
     Ok(())
 }
