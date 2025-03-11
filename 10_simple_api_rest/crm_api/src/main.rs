@@ -14,7 +14,7 @@ mod articulos;
 mod clientes;
 
 use articulos::{Articulo, postgres_get_articulos};
-use clientes::{Cliente, postgres_get_cliente_by_id};
+use clientes::{Cliente, postgres_get_cliente_by_user_id};
 
 struct AppState {
     pool: sqlx::Pool<sqlx::Postgres>,
@@ -52,7 +52,7 @@ async fn getarticulos(state: &rocket::State<AppState>) -> Result<Json<Vec<Articu
 async fn profile(state: &State<AppState>, user_id: i32) -> Result<Json<Cliente>, Status> {
     let pool = state.pool.clone();
 
-    let cliente = postgres_get_cliente_by_id(&pool, user_id)
+    let cliente = postgres_get_cliente_by_user_id(&pool, user_id)
         .await
         .map_err(|e| {
             eprintln!("Error getting client: {:?}", e);

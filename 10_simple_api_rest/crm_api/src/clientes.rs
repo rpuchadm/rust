@@ -12,7 +12,7 @@ pub struct Cliente {
     fecha_registro: chrono::NaiveDateTime,
 }
 
-pub async fn postgres_get_cliente_by_id(
+pub async fn postgres_get_cliente_by_user_id(
     pool: &sqlx::Pool<sqlx::Postgres>,
     user_id: i32,
 ) -> Result<Cliente, sqlx::Error> {
