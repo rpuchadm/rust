@@ -258,7 +258,7 @@ async fn rocket() -> _ {
         })
         .unwrap();
 
-    ini_postgres(pool.clone()).await;
+    postgresini(pool.clone()).await;
 
     rocket::build().manage(AppState { pool }).mount(
         "/",
@@ -266,77 +266,6 @@ async fn rocket() -> _ {
     )
 }
 
-async fn ini_postgres(pool: sqlx::Pool<sqlx::Postgres>) {
-    sqlx::query(
-        r#"        
-        DROP INDEX IF EXISTS idx_sessions_code_client_id;
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    sqlx::query(
-        r#"        
-        DROP INDEX IF EXISTS idx_sessions_token;
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    sqlx::query(
-        r#"        
-        DROP TABLE IF EXISTS sessions;
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS sessions (
-            id SERIAL PRIMARY KEY,
-            client_id TEXT NOT NULL,
-            code TEXT,
-            token TEXT,
-            user_id INTEGER NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            expires_at TIMESTAMP NOT NULL,
-            closed_at TIMESTAMP,
-            attributes JSONB NOT NULL
-        )
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    // Crea un índice para que code y client_id sean únicos cuando code no sea null
-    sqlx::query(
-        r#"
-        CREATE INDEX IF NOT EXISTS idx_sessions_code_client_id
-        ON sessions (code, client_id)
-        WHERE code IS NOT NULL
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    // Crea un índice para que token sea único cuando no sea null
-    sqlx::query(
-        r#"
-        CREATE INDEX IF NOT EXISTS idx_sessions_token
-        ON sessions (token)
-        WHERE token IS NOT NULL
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-}
 // constante con el servidor de postgres
 const POSTGRES_SERVER: &str = "postgresql://myuser:mypassword@localhost:5432/mydatabase";
 
@@ -448,6 +377,78 @@ async fn postgres_update_session_token_null_closed_at_by_id(
     .await?;
 
     Ok(())
+}
+
+async fn postgresini(pool: sqlx::Pool<sqlx::Postgres>) {
+    sqlx::query(
+        r#"        
+        DROP INDEX IF EXISTS idx_sessions_code_client_id;
+        "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"        
+        DROP INDEX IF EXISTS idx_sessions_token;
+        "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"        
+        DROP TABLE IF EXISTS sessions;
+        "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS sessions (
+            id SERIAL PRIMARY KEY,
+            client_id TEXT NOT NULL,
+            code TEXT,
+            token TEXT,
+            user_id INTEGER NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP NOT NULL,
+            closed_at TIMESTAMP,
+            attributes JSONB NOT NULL
+        )
+        "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    // Crea un índice para que code y client_id sean únicos cuando code no sea null
+    sqlx::query(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_sessions_code_client_id
+        ON sessions (code, client_id)
+        WHERE code IS NOT NULL
+        "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    // Crea un índice para que token sea único cuando no sea null
+    sqlx::query(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_sessions_token
+        ON sessions (token)
+        WHERE token IS NOT NULL
+        "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
 }
 
 // funcion para generar un token aleatorio de n caracteres
