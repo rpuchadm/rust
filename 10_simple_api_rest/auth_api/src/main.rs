@@ -23,6 +23,8 @@ use sesion::{
 // declara string con token supersecreto que permite crear sesiones nuevas y desactivar viejas
 const SUPER_SECRET: &str = "mysupersecret"; // en un futuro se sacará de ENV
 
+const REDIS_SERVER: &str = "redis://:WEVDH12f34r56w78m9@127.0.0.1/";
+
 struct AppState {
     pool: sqlx::Pool<sqlx::Postgres>,
 }
@@ -107,10 +109,16 @@ async fn access_token(
 // a get profile se accede de manera reiterada con el token para obtener la sesión
 #[get("/profile")]
 async fn profile(state: &State<AppState>, token: BearerToken) -> Result<Json<Session>, Status> {
-    let session = redis_get_session_by_token(&token.0).await.map_err(|err| {
-        eprintln!("Error getting session by token={} : {:?}", token.0, err);
+    let client = redis::Client::open(REDIS_SERVER).map_err(|err| {
+        eprintln!("Error connecting to redis: {:?}", err);
         Status::InternalServerError
     })?;
+    let session = redis_get_session_by_token(&client, &token.0)
+        .await
+        .map_err(|err| {
+            eprintln!("Error getting session by token={} : {:?}", token.0, err);
+            Status::InternalServerError
+        })?;
 
     if let Some(session) = session {
         // println!("Session from redis: {:?}", session);
@@ -131,8 +139,11 @@ async fn profile(state: &State<AppState>, token: BearerToken) -> Result<Json<Ses
     // println!("Session from postgres: {:?}", session);
 
     session.token = None;
-
-    redis_set_session_by_token(&token.0, &session)
+    let client = redis::Client::open(REDIS_SERVER).map_err(|err| {
+        eprintln!("Error connecting to redis: {:?}", err);
+        Status::InternalServerError
+    })?;
+    redis_set_session_by_token(&client, &token.0, &session)
         .await
         .map_err(|err| {
             eprintln!(
